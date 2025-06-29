@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
             // Optionally, show a loading or placeholder UI here
             return
         }
+        viewModel.startUptimeIfNeeded()
         loadMainUi()
     }
 
@@ -76,6 +77,30 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Observe uptime
+        lifecycleScope.launchWhenStarted {
+            viewModel.uptime.collectLatest { ms ->
+                val seconds = ms / 1000
+                val h = seconds / 3600
+                val m = (seconds % 3600) / 60
+                val s = seconds % 60
+                val formatted = if (h > 0) String.format("Uptime: %dh %02dm %02ds", h, m, s) else String.format("Uptime: %dm %02ds", m, s)
+                binding.uptimeTextView.text = formatted
+            }
+        }
+        // Observe processed count
+        lifecycleScope.launchWhenStarted {
+            viewModel.processedCount.collectLatest { count ->
+                binding.processedTextView.text = "Total SMS Processed: $count"
+            }
+        }
+        // Observe relayed count
+        lifecycleScope.launchWhenStarted {
+            viewModel.relayedCount.collectLatest { count ->
+                binding.relayedTextView.text = "Total SMS Relayed: $count"
+            }
+        }
+
         // Save button click
         binding.saveButton.setOnClickListener {
             val endpoint = binding.apiEndpointEditText.text.toString().trim()
@@ -102,6 +127,7 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 1001) {
             if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                viewModel.startUptimeIfNeeded()
                 loadMainUi()
             } else {
                 showPermissionDeniedUi()

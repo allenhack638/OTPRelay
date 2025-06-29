@@ -16,6 +16,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import androidx.lifecycle.ViewModelProvider
+import com.example.otprelay.MainViewModel
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.edit
 
 private val Context.dataStore by preferencesDataStore(name = "settings")
 private val API_ENDPOINT_KEY = stringPreferencesKey("api_endpoint")
@@ -35,6 +39,8 @@ class SmsReceiver : BroadcastReceiver() {
                         val sender = sms.originatingAddress ?: ""
                         val timestamp = sms.timestampMillis
                         val otp = extractOtp(messageBody)
+                        // Increment processed count
+                        incrementProcessedCounter(context)
                         if (otp != null) {
                             // Launch coroutine to get API endpoint and enqueue worker
                             CoroutineScope(Dispatchers.IO).launch {
@@ -59,6 +65,16 @@ class SmsReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 Log.e("SmsReceiver", "Exception: ${e.message}")
             }
+        }
+    }
+
+    private fun incrementProcessedCounter(context: Context) {
+        // Use DataStore directly since ViewModel is not available in BroadcastReceiver
+        CoroutineScope(Dispatchers.IO).launch {
+            val prefs = context.dataStore.data.first()
+            val key = androidx.datastore.preferences.core.stringPreferencesKey("processed_count")
+            val current = prefs[key]?.toIntOrNull() ?: 0
+            context.dataStore.edit { prefsEdit: MutablePreferences -> prefsEdit[key] = (current + 1).toString() }
         }
     }
 

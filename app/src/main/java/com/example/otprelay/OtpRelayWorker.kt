@@ -11,6 +11,14 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 import java.io.IOException
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.edit
 
 // Data keys
 const val KEY_OTP = "otp"
@@ -36,6 +44,7 @@ class OtpRelayWorker(
     appContext: Context,
     params: WorkerParameters
 ) : CoroutineWorker(appContext, params) {
+    private val Context.dataStore by preferencesDataStore(name = "settings")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val otp = inputData.getString(KEY_OTP) ?: return@withContext Result.failure()
         val sender = inputData.getString(KEY_SENDER) ?: ""
@@ -52,6 +61,7 @@ class OtpRelayWorker(
             val payload = OtpPayload(otp, sender, timestamp, message)
             val response = api.relayOtp(payload)
             if (response.isSuccessful) {
+                incrementRelayedCounter(applicationContext)
                 return@withContext Result.success()
             } else {
                 return@withContext Result.retry()
@@ -60,6 +70,15 @@ class OtpRelayWorker(
             return@withContext Result.retry()
         } catch (e: Exception) {
             return@withContext Result.failure()
+        }
+    }
+
+    private fun incrementRelayedCounter(context: Context) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val prefs = context.dataStore.data.first()
+            val key = stringPreferencesKey("relayed_count")
+            val current = prefs[key]?.toIntOrNull() ?: 0
+            context.dataStore.edit { prefsEdit: MutablePreferences -> prefsEdit[key] = (current + 1).toString() }
         }
     }
 } 

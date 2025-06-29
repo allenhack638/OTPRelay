@@ -44,4 +44,28 @@
         android:text="Enable OTP Relay"
         android:layout_marginTop="16dp" />
 
+    <TextView
+        android:id="@+id/uptimeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Uptime: 0s"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+        android:layout_marginTop="32dp" />
+
+    <TextView
+        android:id="@+id/processedTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Total SMS Processed: 0"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/relayedTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Total SMS Relayed: 0"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+        android:layout_marginTop="8dp" />
+
 </LinearLayout>
